@@ -1,13 +1,40 @@
 {
-  "name": "aimprotocol-site",
+  "name": "agent-beacon",
   "version": "0.1.0",
-  "description": "AIM Protocol — the open standard for agent-ready websites",
-  "private": true,
+  "description": "The visual component of AIM Protocol — a drop-in script that makes any website agent-ready.",
+  "main": "public/beacon.js",
   "type": "module",
+  "files": [
+    "public/beacon.js",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "keywords": [
+    "aim",
+    "aim-protocol",
+    "agent",
+    "ai-agent",
+    "beacon",
+    "agent-beacon",
+    "web-agent",
+    "manifest",
+    "dom-introspection",
+    "accessibility"
+  ],
+  "author": "AIM Protocol Contributors",
+  "license": "MIT",
+  "homepage": "https://aimprotocol.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aimprotocol/web"
+  },
+  "bugs": {
+    "url": "https://github.com/aimprotocol/web/issues"
   },
   "dependencies": {
     "react": "^18.3.1",
