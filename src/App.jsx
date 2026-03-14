@@ -304,6 +304,126 @@ function StyleSelector({ colors, selected, onSelect }) {
 }
 
 /* ═══════════════════════════════════════════
+   ABOUT MODAL
+   ═══════════════════════════════════════════ */
+function AboutModal({ onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 100000,
+        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 16, maxWidth: 560, width: "100%", maxHeight: "80vh",
+          overflow: "auto", padding: "32px 36px",
+          boxShadow: `0 24px 80px rgba(0,0,0,0.5), 0 0 40px ${C.accent}11`,
+        }}
+      >
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+          marginBottom: 24,
+        }}>
+          <div>
+            <h2 style={{
+              fontFamily: "'Instrument Serif', serif", fontSize: 28, color: C.white,
+              fontWeight: 400, letterSpacing: "-0.02em", marginBottom: 4,
+            }}>What is AIM Protocol?</h2>
+            <div style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.accent,
+              letterSpacing: "0.1em", textTransform: "uppercase",
+            }}>Agent Interaction Protocol</div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              background: "none", border: "none", color: C.textMuted, fontSize: 18,
+              cursor: "pointer", padding: 4, lineHeight: 1, flexShrink: 0,
+            }}
+          >{'\u2715'}</button>
+        </div>
+
+        <div style={{
+          fontFamily: "'Outfit', sans-serif", fontSize: 14, color: C.textDim,
+          lineHeight: 1.7, display: "flex", flexDirection: "column", gap: 20,
+        }}>
+          <p style={{ color: C.text, fontSize: 15, fontWeight: 400 }}>
+            AIM is an open standard that makes any website agent-ready. Instead of scraping
+            your UI, AI agents get a structured manifest describing every interactive element
+            on the page — instantly.
+          </p>
+
+          <div>
+            <h3 style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+              letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+            }}>The Problem</h3>
+            <ul style={{ paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+              <li>Full APIs are expensive to build and rarely cover all UI functionality</li>
+              <li>Screen-scraping agents are slow, brittle, and compute-heavy</li>
+              <li>There's no middle layer for agents to interact with arbitrary web pages</li>
+              <li>When agents do work on websites, humans have zero visibility</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+              letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+            }}>How It Works</h3>
+            <p>
+              Add one script tag to your site. The AgentBeacon auto-reads every page's
+              interactive elements and generates a JSON manifest that any AIM-aware agent
+              can consume. No APIs to build. No DOM scraping. No new language to learn.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+              letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+            }}>Why the Beacon?</h3>
+            <p>
+              The AgentBeacon is the human-facing signal — a small animated pixel grid that
+              tells users "this page is agent-ready." Like router lights: not technically required,
+              but you'd never trust a router without them. It gives you awareness when an agent
+              is working on your behalf.
+            </p>
+          </div>
+
+          <div>
+            <h3 style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+              letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+            }}>Privacy</h3>
+            <p>
+              This script runs entirely in the browser. It does not transmit any data to any
+              server, third party, or external service. No cookies, no network requests,
+              no tracking. The beacon is purely visual.
+            </p>
+          </div>
+
+          <div style={{
+            padding: "14px 16px", background: C.bg, borderRadius: 8,
+            border: `1px solid ${C.border}`, fontFamily: "'Space Mono', monospace",
+            fontSize: 11, color: C.textMuted, fontStyle: "italic",
+          }}>
+            "AIM is the protocol. AgentBeacon is the heartbeat."
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
    PRESET PALETTES
    ═══════════════════════════════════════════ */
 const PRESETS = [
@@ -326,6 +446,7 @@ export default function BeaconGenerator() {
   const [size, setSize] = useState("md");
   const [position, setPosition] = useState("bottom-right");
   const [copied, setCopied] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const sizeMap = { sm: "28px", md: "40px", lg: "56px" };
 
@@ -354,6 +475,8 @@ export default function BeaconGenerator() {
         ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 4px; }
       `}</style>
 
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
       <div style={{
         width: "100%", minHeight: "100vh", background: C.bg,
         padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center",
@@ -363,7 +486,7 @@ export default function BeaconGenerator() {
           <span style={{
             fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.15em",
             textTransform: "uppercase", color: C.amber, display: "block", marginBottom: 12,
-          }}>Beacon Generator</span>
+          }}>Beacon Generator / Open Source</span>
           <h1 style={{
             fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 400,
             color: C.white, lineHeight: 1.15, letterSpacing: "-0.03em", marginBottom: 10,
@@ -379,7 +502,19 @@ export default function BeaconGenerator() {
             maxWidth: 440, lineHeight: 1.6, fontWeight: 300,
           }}>
             Customize the look, copy one script tag, paste it in your site's footer.
-            Your beacon will auto-read every page — zero configuration.
+            Your beacon will auto-read every page — zero configuration.{" "}
+            <button
+              onClick={() => setShowAbout(true)}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontFamily: "'Outfit', sans-serif", fontSize: 15, fontWeight: 400,
+                color: C.accentBright, padding: 0, textDecoration: "underline",
+                textDecorationColor: C.accent + "44", textUnderlineOffset: 3,
+                transition: "color 0.2s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = C.white}
+              onMouseLeave={e => e.currentTarget.style.color = C.accentBright}
+            >Learn more</button>
           </p>
         </div>
 
@@ -606,6 +741,25 @@ export default function BeaconGenerator() {
           fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted,
         }}>
           ◈ AIM Protocol · aimprotocol.org · One script tag. Every page. Zero config.
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+            <span style={{
+              fontSize: 9, color: C.textMuted, border: `1px solid ${C.border}`,
+              borderRadius: 4, padding: "2px 6px", letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}>open source</span>
+            <a
+              href="https://github.com/aimprotocol/web"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: C.textMuted, display: "flex", alignItems: "center", transition: "color 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.color = C.white}
+              onMouseLeave={e => e.currentTarget.style.color = C.textMuted}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+            </a>
+          </div>
         </div>
       </div>
 
