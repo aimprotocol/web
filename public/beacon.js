@@ -365,6 +365,9 @@
     // Container
     var container = document.createElement('div');
     container.id = 'aim-beacon-container';
+    container.setAttribute('role', 'button');
+    container.setAttribute('aria-label', 'AIM Protocol beacon — click to view page manifest');
+    container.setAttribute('tabindex', '0');
 
     // Position styles
     var posStyles = {
@@ -391,6 +394,7 @@
     var canvas = document.createElement('canvas');
     canvas.width = canvasSize;
     canvas.height = canvasSize;
+    canvas.setAttribute('aria-hidden', 'true');
     canvas.setAttribute('style',
       'border-radius:' + (canvasSize < 40 ? '4px' : '6px') + ';' +
       'image-rendering:pixelated;flex-shrink:0;'
@@ -470,7 +474,21 @@
     // Header
     var header = document.createElement('div');
     header.setAttribute('style', 'font-family:-apple-system,system-ui,sans-serif;font-size:12px;font-weight:700;color:#e0e2ea;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;');
-    header.innerHTML = '<span>AIM Manifest</span><span style="font-size:10px;color:#555;cursor:pointer;" id="aim-close-panel">✕</span>';
+
+    var headerTitle = document.createElement('span');
+    headerTitle.textContent = 'AIM Manifest';
+    header.appendChild(headerTitle);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '\u2715';
+    closeBtn.setAttribute('aria-label', 'Close manifest panel');
+    closeBtn.setAttribute('style', 'font-size:10px;color:#555;cursor:pointer;background:none;border:none;padding:4px;');
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (panel.parentNode) panel.parentNode.removeChild(panel);
+    });
+    header.appendChild(closeBtn);
+
     panel.appendChild(header);
 
     // Manifest content
@@ -478,17 +496,6 @@
     content.setAttribute('style', 'margin:0;font-size:10px;line-height:1.5;');
     content.textContent = JSON.stringify(currentManifest, null, 2);
     panel.appendChild(content);
-
-    // Close button
-    setTimeout(function() {
-      var closeBtn = document.getElementById('aim-close-panel');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          if (panel.parentNode) panel.parentNode.removeChild(panel);
-        });
-      }
-    }, 0);
 
     return panel;
   }

@@ -235,7 +235,7 @@ export default function BeaconGenerator() {
 
   const sizeMap = { sm: "28px", md: "40px", lg: "56px" };
 
-  const scriptTag = `<script src="https://cdn.aimprotocol.org/beacon.js"
+  const scriptTag = `<script src="https://aimprotocol.org/beacon.js"
   data-colors="${colors.join(",")}"
   data-style="${style}"
   data-size="${size}"
@@ -369,7 +369,7 @@ export default function BeaconGenerator() {
                   letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
                 }}>Position</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {[["bottom-right", "BR"], ["bottom-left", "BL"], ["header-right", "HR"]].map(([val, label]) => (
+                  {[["bottom-right", "BR"], ["bottom-left", "BL"], ["header-right", "HR"], ["header-left", "HL"]].map(([val, label]) => (
                     <button key={val} onClick={() => setPosition(val)} style={{
                       flex: 1, padding: "8px 0", background: position === val ? C.surfaceLight : C.surface,
                       border: `1.5px solid ${position === val ? C.accent : C.border}`,
