@@ -1,0 +1,521 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+
+/* ═══════════════════════════════════════════
+   COLORS — matching the AIM marketing page
+   ═══════════════════════════════════════════ */
+const C = {
+  bg: "#050507", surface: "#0d0d12", surfaceLight: "#141419",
+  border: "#1e1e2a", accent: "#7c6aef", accentBright: "#b4a7ff",
+  accentDim: "#5b4cc4", green: "#3de8a0", amber: "#f5c842",
+  cyan: "#4adef0", pink: "#e86cb4", text: "#dcdde3",
+  textDim: "#8e90a0", textMuted: "#555666", white: "#f0f0f4",
+};
+
+/* ═══════════════════════════════════════════
+   BEACON RENDERERS — 4 visualization styles
+   ═══════════════════════════════════════════ */
+function bHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
+
+function lerpColor(c1, c2, t) {
+  return [
+    Math.round(c1[0] + (c2[0] - c1[0]) * t),
+    Math.round(c1[1] + (c2[1] - c1[1]) * t),
+    Math.round(c1[2] + (c2[2] - c1[2]) * t),
+  ];
+}
+
+// Style 1: Shimmer (default — the original)
+function paintShimmer(ctx, grid, cell, t, colors) {
+  const data = "aim-protocol-manifest-v01-shimmer";
+  const [c1, c2, c3] = colors;
+  for (let i = 0; i < grid * grid; i++) {
+    const ci = i % data.length;
+    const cc = data.charCodeAt(ci);
+    const s = bHash(`${cc}-${i}-${Math.floor(t / 4)}`);
+    const w = Math.sin(t * 0.12 + i * 0.25) * 0.15;
+    const blend = (Math.sin(t * 0.04 + i * 0.08) + 1) / 2;
+    const blend2 = (Math.cos(t * 0.03 + i * 0.12) + 1) / 2;
+    const base = lerpColor(lerpColor(c1, c2, blend), c3, blend2);
+    const noise = ((cc * 7 + s * 3) % 60 - 30);
+    const r = Math.max(0, Math.min(255, base[0] * (0.4 + w) + noise));
+    const g = Math.max(0, Math.min(255, base[1] * (0.35 + w) + noise * 0.7));
+    const b = Math.max(0, Math.min(255, base[2] * (0.5 + w) + noise * 0.5));
+    ctx.fillStyle = `rgb(${r | 0},${g | 0},${b | 0})`;
+    ctx.fillRect((i % grid) * cell, Math.floor(i / grid) * cell, cell, cell);
+  }
+}
+
+// Style 2: Geometric — structured blocks that shift
+function paintGeometric(ctx, grid, cell, t, colors) {
+  const [c1, c2, c3] = colors;
+  for (let i = 0; i < grid * grid; i++) {
+    const x = i % grid;
+    const y = Math.floor(i / grid);
+    const blockX = Math.floor(x / 4);
+    const blockY = Math.floor(y / 4);
+    const blockId = blockX * 7 + blockY * 13;
+    const phase = Math.sin(t * 0.05 + blockId * 0.8);
+    const innerPhase = Math.sin(t * 0.15 + (x + y) * 0.5);
+    const pick = ((blockId + Math.floor(t / 20)) % 3);
+    const base = pick === 0 ? c1 : pick === 1 ? c2 : c3;
+    const brightness = 0.3 + phase * 0.15 + innerPhase * 0.1;
+    const edge = (x % 4 === 0 || y % 4 === 0) ? 0.6 : 1;
+    ctx.fillStyle = `rgb(${(base[0] * brightness * edge) | 0},${(base[1] * brightness * edge) | 0},${(base[2] * brightness * edge) | 0})`;
+    ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+}
+
+// Style 3: Wave — smooth flowing gradient waves
+function paintWave(ctx, grid, cell, t, colors) {
+  const [c1, c2, c3] = colors;
+  for (let i = 0; i < grid * grid; i++) {
+    const x = i % grid;
+    const y = Math.floor(i / grid);
+    const wave1 = Math.sin(x * 0.3 + t * 0.06) * 0.5 + 0.5;
+    const wave2 = Math.cos(y * 0.25 + t * 0.05) * 0.5 + 0.5;
+    const wave3 = Math.sin((x + y) * 0.2 + t * 0.04) * 0.5 + 0.5;
+    const mixed = lerpColor(lerpColor(c1, c2, wave1), c3, wave2);
+    const brightness = 0.3 + wave3 * 0.35;
+    ctx.fillStyle = `rgb(${(mixed[0] * brightness) | 0},${(mixed[1] * brightness) | 0},${(mixed[2] * brightness) | 0})`;
+    ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+}
+
+// Style 4: Pulse — concentric rings radiating from center
+function paintPulse(ctx, grid, cell, t, colors) {
+  const [c1, c2, c3] = colors;
+  const cx = grid / 2;
+  const cy = grid / 2;
+  for (let i = 0; i < grid * grid; i++) {
+    const x = i % grid;
+    const y = Math.floor(i / grid);
+    const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+    const ring = Math.sin(dist * 0.8 - t * 0.1) * 0.5 + 0.5;
+    const ring2 = Math.cos(dist * 0.5 - t * 0.07) * 0.5 + 0.5;
+    const pick = ring > 0.6 ? c1 : ring2 > 0.5 ? c2 : c3;
+    const brightness = 0.25 + ring * 0.25 + ring2 * 0.15;
+    const noise = Math.sin(t * 0.2 + i * 0.1) * 10;
+    ctx.fillStyle = `rgb(${Math.max(0, Math.min(255, (pick[0] * brightness + noise) | 0))},${Math.max(0, Math.min(255, (pick[1] * brightness + noise * 0.6) | 0))},${Math.max(0, Math.min(255, (pick[2] * brightness + noise * 0.3) | 0))})`;
+    ctx.fillRect(x * cell, y * cell, cell, cell);
+  }
+}
+
+const PAINTERS = { shimmer: paintShimmer, geometric: paintGeometric, wave: paintWave, pulse: paintPulse };
+
+/* ═══════════════════════════════════════════
+   BEACON PREVIEW COMPONENT
+   ═══════════════════════════════════════════ */
+function BeaconPreview({ colors, style, size = 160, grid = 20, showGlow = true }) {
+  const ref = useRef(null);
+  const tick = useRef(0);
+
+  useEffect(() => {
+    const cvs = ref.current;
+    if (!cvs) return;
+    const ctx = cvs.getContext("2d");
+    const cell = size / grid;
+    const rgbColors = colors.map(hexToRgb);
+    const painter = PAINTERS[style] || PAINTERS.shimmer;
+    let raf;
+    const paint = () => {
+      tick.current++;
+      painter(ctx, grid, cell, tick.current, rgbColors);
+      raf = requestAnimationFrame(paint);
+    };
+    paint();
+    return () => cancelAnimationFrame(raf);
+  }, [colors, style, size, grid]);
+
+  return (
+    <canvas ref={ref} width={size} height={size} style={{
+      borderRadius: size > 80 ? 12 : 8,
+      imageRendering: "pixelated",
+      boxShadow: showGlow ? `0 0 30px ${colors[0]}55, 0 0 60px ${colors[0]}20` : `0 0 12px ${colors[0]}33`,
+    }} />
+  );
+}
+
+/* ═══════════════════════════════════════════
+   COLOR PICKER
+   ═══════════════════════════════════════════ */
+function ColorPicker({ label, value, onChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 8, background: value,
+        border: `2px solid ${C.border}`, cursor: "pointer", position: "relative",
+        boxShadow: `0 0 12px ${value}44`, overflow: "hidden", flexShrink: 0,
+      }}>
+        <input type="color" value={value} onChange={e => onChange(e.target.value)}
+          style={{
+            position: "absolute", inset: -8, width: "calc(100% + 16px)",
+            height: "calc(100% + 16px)", cursor: "pointer", opacity: 0,
+          }} />
+      </div>
+      <div>
+        <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, color: C.text, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted }}>{value}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   STYLE SELECTOR
+   ═══════════════════════════════════════════ */
+function StyleSelector({ colors, selected, onSelect }) {
+  const styles = [
+    { id: "shimmer", name: "Shimmer", desc: "Organic, flowing data" },
+    { id: "geometric", name: "Geometric", desc: "Structured, blocky" },
+    { id: "wave", name: "Wave", desc: "Smooth gradients" },
+    { id: "pulse", name: "Pulse", desc: "Radial rings" },
+  ];
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      {styles.map(s => (
+        <button key={s.id} onClick={() => onSelect(s.id)} style={{
+          padding: 12, background: selected === s.id ? C.surfaceLight : C.surface,
+          border: `2px solid ${selected === s.id ? C.accent : C.border}`,
+          borderRadius: 12, cursor: "pointer", display: "flex",
+          flexDirection: "column", alignItems: "center", gap: 8,
+          transition: "all 0.25s",
+        }}
+          onMouseEnter={e => { if (selected !== s.id) e.currentTarget.style.borderColor = C.accent + "66"; }}
+          onMouseLeave={e => { if (selected !== s.id) e.currentTarget.style.borderColor = C.border; }}
+        >
+          <BeaconPreview colors={colors} style={s.id} size={64} grid={12} showGlow={false} />
+          <div>
+            <div style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700,
+              color: selected === s.id ? C.accentBright : C.text,
+            }}>{s.name}</div>
+            <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, color: C.textMuted }}>{s.desc}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   PRESET PALETTES
+   ═══════════════════════════════════════════ */
+const PRESETS = [
+  { name: "AIM Default", colors: ["#6366f1", "#ec4899", "#06b6d4"] },
+  { name: "Ember", colors: ["#ef4444", "#f97316", "#fbbf24"] },
+  { name: "Forest", colors: ["#22c55e", "#059669", "#14b8a6"] },
+  { name: "Ocean", colors: ["#3b82f6", "#6366f1", "#8b5cf6"] },
+  { name: "Sunset", colors: ["#f43f5e", "#d946ef", "#8b5cf6"] },
+  { name: "Monochrome", colors: ["#6b7280", "#9ca3af", "#d1d5db"] },
+  { name: "Neon", colors: ["#22d3ee", "#a3e635", "#f472b6"] },
+  { name: "Earth", colors: ["#b45309", "#92400e", "#78350f"] },
+];
+
+/* ═══════════════════════════════════════════
+   MAIN GENERATOR
+   ═══════════════════════════════════════════ */
+export default function BeaconGenerator() {
+  const [colors, setColors] = useState(["#6366f1", "#ec4899", "#06b6d4"]);
+  const [style, setStyle] = useState("shimmer");
+  const [size, setSize] = useState("md");
+  const [position, setPosition] = useState("bottom-right");
+  const [copied, setCopied] = useState(false);
+
+  const sizeMap = { sm: "28px", md: "40px", lg: "56px" };
+
+  const scriptTag = `<script src="https://cdn.aimprotocol.org/beacon.js"
+  data-colors="${colors.join(",")}"
+  data-style="${style}"
+  data-size="${size}"
+  data-position="${position}">
+</script>`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(scriptTag).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: ${C.bg}; }
+        ::selection { background: ${C.accent}44; color: ${C.white}; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: ${C.border}; border-radius: 4px; }
+      `}</style>
+
+      <div style={{
+        width: "100%", minHeight: "100vh", background: C.bg,
+        padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center",
+      }}>
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <span style={{
+            fontFamily: "'Space Mono', monospace", fontSize: 10, letterSpacing: "0.15em",
+            textTransform: "uppercase", color: C.amber, display: "block", marginBottom: 12,
+          }}>Beacon Generator</span>
+          <h1 style={{
+            fontFamily: "'Instrument Serif', serif", fontSize: 40, fontWeight: 400,
+            color: C.white, lineHeight: 1.15, letterSpacing: "-0.03em", marginBottom: 10,
+          }}>
+            Create <em style={{
+              background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]}, ${colors[2]})`,
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontStyle: "italic",
+            }}>your</em> beacon
+          </h1>
+          <p style={{
+            fontFamily: "'Outfit', sans-serif", fontSize: 15, color: C.textDim,
+            maxWidth: 440, lineHeight: 1.6, fontWeight: 300,
+          }}>
+            Customize the look, copy one script tag, paste it in your site's footer.
+            Your beacon will auto-read every page — zero configuration.
+          </p>
+        </div>
+
+        {/* Main layout */}
+        <div style={{
+          display: "flex", gap: 32, maxWidth: 900, width: "100%",
+          flexWrap: "wrap", justifyContent: "center",
+        }}>
+          {/* Left: Controls */}
+          <div style={{ flex: "1 1 320px", maxWidth: 380, display: "flex", flexDirection: "column", gap: 24 }}>
+
+            {/* Colors */}
+            <div>
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12,
+              }}>Brand Colors</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                <ColorPicker label="Primary" value={colors[0]} onChange={v => setColors([v, colors[1], colors[2]])} />
+                <ColorPicker label="Secondary" value={colors[1]} onChange={v => setColors([colors[0], v, colors[2]])} />
+                <ColorPicker label="Accent" value={colors[2]} onChange={v => setColors([colors[0], colors[1], v])} />
+              </div>
+
+              {/* Presets */}
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 9, color: C.textMuted,
+                letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8,
+              }}>Presets</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {PRESETS.map(p => (
+                  <button key={p.name} onClick={() => setColors([...p.colors])} style={{
+                    padding: "4px 10px", background: C.surface, border: `1px solid ${C.border}`,
+                    borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+                    transition: "all 0.2s",
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = p.colors[0]}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                  >
+                    <div style={{ display: "flex", gap: 2 }}>
+                      {p.colors.map((c, i) => (
+                        <div key={i} style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
+                      ))}
+                    </div>
+                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 10, color: C.textDim }}>{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Style */}
+            <div>
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12,
+              }}>Visualization Style</div>
+              <StyleSelector colors={colors} selected={style} onSelect={setStyle} />
+            </div>
+
+            {/* Size & Position */}
+            <div style={{ display: "flex", gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                  letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+                }}>Size</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["sm", "md", "lg"].map(s => (
+                    <button key={s} onClick={() => setSize(s)} style={{
+                      flex: 1, padding: "8px 0", background: size === s ? C.surfaceLight : C.surface,
+                      border: `1.5px solid ${size === s ? C.accent : C.border}`,
+                      borderRadius: 6, color: size === s ? C.accentBright : C.textDim,
+                      fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700,
+                      cursor: "pointer", transition: "all 0.2s", textTransform: "uppercase",
+                    }}>{s}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{
+                  fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                  letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+                }}>Position</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[["bottom-right", "BR"], ["bottom-left", "BL"], ["header-right", "HR"]].map(([val, label]) => (
+                    <button key={val} onClick={() => setPosition(val)} style={{
+                      flex: 1, padding: "8px 0", background: position === val ? C.surfaceLight : C.surface,
+                      border: `1.5px solid ${position === val ? C.accent : C.border}`,
+                      borderRadius: 6, color: position === val ? C.accentBright : C.textDim,
+                      fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700,
+                      cursor: "pointer", transition: "all 0.2s",
+                    }}>{label}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Preview + Code */}
+          <div style={{ flex: "1 1 380px", maxWidth: 460, display: "flex", flexDirection: "column", gap: 24 }}>
+
+            {/* Live Preview */}
+            <div style={{
+              padding: 32, background: C.surface, borderRadius: 16,
+              border: `1px solid ${C.border}`, display: "flex",
+              flexDirection: "column", alignItems: "center", gap: 20,
+              position: "relative", overflow: "hidden",
+              minHeight: 280,
+            }}>
+              {/* Simulated page background */}
+              <div style={{
+                position: "absolute", inset: 0, opacity: 0.03,
+                background: `repeating-linear-gradient(0deg, ${C.white} 0px, ${C.white} 1px, transparent 1px, transparent 20px),
+                             repeating-linear-gradient(90deg, ${C.white} 0px, ${C.white} 1px, transparent 1px, transparent 20px)`,
+              }} />
+
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                letterSpacing: "0.12em", textTransform: "uppercase",
+                position: "relative", zIndex: 1,
+              }}>Live Preview</div>
+
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <BeaconPreview colors={colors} style={style} size={160} grid={22} />
+              </div>
+
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                position: "relative", zIndex: 1,
+              }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", background: C.green,
+                  boxShadow: `0 0 6px ${C.green}`,
+                  animation: "pulse 2s ease-in-out infinite",
+                }} />
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.green }}>
+                  Broadcasting · {size.toUpperCase()} · {position}
+                </span>
+              </div>
+
+              {/* Size reference */}
+              <div style={{
+                display: "flex", alignItems: "flex-end", gap: 12,
+                position: "relative", zIndex: 1,
+              }}>
+                <div style={{ textAlign: "center" }}>
+                  <BeaconPreview colors={colors} style={style} size={28} grid={6} showGlow={false} />
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.textMuted, marginTop: 4 }}>SM 28px</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <BeaconPreview colors={colors} style={style} size={40} grid={8} showGlow={false} />
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.textMuted, marginTop: 4 }}>MD 40px</div>
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <BeaconPreview colors={colors} style={style} size={56} grid={10} showGlow={false} />
+                  <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 8, color: C.textMuted, marginTop: 4 }}>LG 56px</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Script Tag Output */}
+            <div style={{
+              background: C.surface, borderRadius: 12,
+              border: `1px solid ${C.border}`, overflow: "hidden",
+            }}>
+              <div style={{
+                padding: "10px 16px", borderBottom: `1px solid ${C.border}`,
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+              }}>
+                <span style={{
+                  fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted,
+                  fontWeight: 700,
+                }}>Your script tag</span>
+                <button onClick={handleCopy} style={{
+                  padding: "5px 14px",
+                  background: copied ? `${C.green}20` : `${C.accent}18`,
+                  border: `1px solid ${copied ? C.green + "44" : C.accent + "33"}`,
+                  borderRadius: 6, cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700,
+                  color: copied ? C.green : C.accentBright,
+                  transition: "all 0.3s",
+                }}>
+                  {copied ? "✓ Copied!" : "Copy"}
+                </button>
+              </div>
+              <pre style={{
+                padding: "16px", margin: 0,
+                fontFamily: "'Space Mono', monospace", fontSize: 12,
+                color: C.accentBright, lineHeight: 1.6,
+                whiteSpace: "pre-wrap", wordBreak: "break-all",
+              }}>{scriptTag}</pre>
+            </div>
+
+            {/* What it does */}
+            <div style={{
+              padding: "16px 18px", background: `${C.surface}88`, borderRadius: 10,
+              border: `1px solid ${C.border}`,
+            }}>
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 9, color: C.textMuted,
+                letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10,
+              }}>What this does</div>
+              {[
+                { icon: "📡", text: "Auto-reads every page's interactive elements via DOM introspection" },
+                { icon: "📄", text: "Generates an AIM manifest — no per-page config needed" },
+                { icon: "👁", text: "Displays your branded beacon so users know agents can work here" },
+                { icon: "🔒", text: "Read-only — observes your page, never modifies it" },
+              ].map((item, i) => (
+                <div key={i} style={{
+                  display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 8,
+                }}>
+                  <span style={{ fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, color: C.textDim, lineHeight: 1.5 }}>
+                    {item.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          marginTop: 48, textAlign: "center",
+          fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted,
+        }}>
+          ◈ AIM Protocol · aimprotocol.org · One script tag. Every page. Zero config.
+        </div>
+      </div>
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }`}</style>
+    </>
+  );
+}
