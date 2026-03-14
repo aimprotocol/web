@@ -56,22 +56,77 @@ function paintShimmer(ctx, grid, cell, t, colors) {
   }
 }
 
-// Style 2: Geometric — structured blocks that shift
+// Style 2: Prism — a pulsing triangle that breathes with color
 function paintGeometric(ctx, grid, cell, t, colors) {
   const [c1, c2, c3] = colors;
+  const cx = grid / 2;
+  const cy = grid / 2;
+
+  // Triangle vertices (rotates slowly)
+  const angle = t * 0.015;
+  const radius = grid * 0.42;
+  const verts = [
+    { x: cx + Math.cos(angle - Math.PI / 2) * radius, y: cy + Math.sin(angle - Math.PI / 2) * radius },
+    { x: cx + Math.cos(angle + Math.PI * 2 / 3 - Math.PI / 2) * radius, y: cy + Math.sin(angle + Math.PI * 2 / 3 - Math.PI / 2) * radius },
+    { x: cx + Math.cos(angle + Math.PI * 4 / 3 - Math.PI / 2) * radius, y: cy + Math.sin(angle + Math.PI * 4 / 3 - Math.PI / 2) * radius },
+  ];
+
+  // Point-in-triangle test using barycentric coords
+  function inTriangle(px, py) {
+    const d1 = (px - verts[1].x) * (verts[0].y - verts[1].y) - (verts[0].x - verts[1].x) * (py - verts[1].y);
+    const d2 = (px - verts[2].x) * (verts[1].y - verts[2].y) - (verts[1].x - verts[2].x) * (py - verts[2].y);
+    const d3 = (px - verts[0].x) * (verts[2].y - verts[0].y) - (verts[2].x - verts[0].x) * (py - verts[0].y);
+    const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    return !(hasNeg && hasPos);
+  }
+
+  // Barycentric blend for color interpolation
+  function baryBlend(px, py) {
+    const v0x = verts[2].x - verts[0].x, v0y = verts[2].y - verts[0].y;
+    const v1x = verts[1].x - verts[0].x, v1y = verts[1].y - verts[0].y;
+    const v2x = px - verts[0].x, v2y = py - verts[0].y;
+    const d00 = v0x * v0x + v0y * v0y;
+    const d01 = v0x * v1x + v0y * v1y;
+    const d02 = v0x * v2x + v0y * v2y;
+    const d11 = v1x * v1x + v1y * v1y;
+    const d12 = v1x * v2x + v1y * v2y;
+    const inv = 1 / (d00 * d11 - d01 * d01 + 0.0001);
+    const u = (d11 * d02 - d01 * d12) * inv;
+    const v = (d00 * d12 - d01 * d02) * inv;
+    const w = 1 - u - v;
+    return [Math.max(0, Math.min(1, w)), Math.max(0, Math.min(1, v)), Math.max(0, Math.min(1, u))];
+  }
+
+  const pulse = Math.sin(t * 0.06) * 0.15 + 0.85;
+
   for (let i = 0; i < grid * grid; i++) {
     const x = i % grid;
     const y = Math.floor(i / grid);
-    const blockX = Math.floor(x / 4);
-    const blockY = Math.floor(y / 4);
-    const blockId = blockX * 7 + blockY * 13;
-    const phase = Math.sin(t * 0.05 + blockId * 0.8);
-    const innerPhase = Math.sin(t * 0.15 + (x + y) * 0.5);
-    const pick = ((blockId + Math.floor(t / 20)) % 3);
-    const base = pick === 0 ? c1 : pick === 1 ? c2 : c3;
-    const brightness = 0.3 + phase * 0.15 + innerPhase * 0.1;
-    const edge = (x % 4 === 0 || y % 4 === 0) ? 0.6 : 1;
-    ctx.fillStyle = `rgb(${(base[0] * brightness * edge) | 0},${(base[1] * brightness * edge) | 0},${(base[2] * brightness * edge) | 0})`;
+    const inside = inTriangle(x + 0.5, y + 0.5);
+
+    if (inside) {
+      const [w1, w2, w3] = baryBlend(x + 0.5, y + 0.5);
+      const r = (c1[0] * w1 + c2[0] * w2 + c3[0] * w3) * pulse;
+      const g = (c1[1] * w1 + c2[1] * w2 + c3[1] * w3) * pulse;
+      const b = (c1[2] * w1 + c2[2] * w2 + c3[2] * w3) * pulse;
+      const shimmer = Math.sin(t * 0.2 + x * 0.4 + y * 0.3) * 15;
+      ctx.fillStyle = `rgb(${Math.max(0, Math.min(255, (r + shimmer) | 0))},${Math.max(0, Math.min(255, (g + shimmer * 0.6) | 0))},${Math.max(0, Math.min(255, (b + shimmer * 0.3) | 0))})`;
+    } else {
+      // Dark background with subtle glow near edges
+      const dist = Math.min(
+        ...verts.map((v, vi) => {
+          const nv = verts[(vi + 1) % 3];
+          const edgeX = nv.x - v.x, edgeY = nv.y - v.y;
+          const t2 = Math.max(0, Math.min(1, ((x - v.x) * edgeX + (y - v.y) * edgeY) / (edgeX * edgeX + edgeY * edgeY + 0.001)));
+          const closestX = v.x + t2 * edgeX, closestY = v.y + t2 * edgeY;
+          return Math.sqrt((x - closestX) ** 2 + (y - closestY) ** 2);
+        })
+      );
+      const glow = Math.max(0, 1 - dist / 4) * pulse * 0.25;
+      const avg = [(c1[0] + c2[0] + c3[0]) / 3, (c1[1] + c2[1] + c3[1]) / 3, (c1[2] + c2[2] + c3[2]) / 3];
+      ctx.fillStyle = `rgb(${(avg[0] * glow) | 0},${(avg[1] * glow) | 0},${(avg[2] * glow) | 0})`;
+    }
     ctx.fillRect(x * cell, y * cell, cell, cell);
   }
 }
@@ -150,6 +205,22 @@ function BeaconPreview({ colors, style, size = 160, grid = 20, showGlow = true }
    COLOR PICKER
    ═══════════════════════════════════════════ */
 function ColorPicker({ label, value, onChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const isValidHex = (v) => /^#[0-9a-fA-F]{6}$/.test(v);
+
+  const commitDraft = () => {
+    const normalized = draft.startsWith('#') ? draft : '#' + draft;
+    if (isValidHex(normalized)) {
+      onChange(normalized.toLowerCase());
+    }
+    setDraft(isValidHex(normalized) ? normalized.toLowerCase() : value);
+    setEditing(false);
+  };
+
+  useEffect(() => { setDraft(value); }, [value]);
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{
@@ -165,7 +236,30 @@ function ColorPicker({ label, value, onChange }) {
       </div>
       <div>
         <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 12, color: C.text, fontWeight: 500 }}>{label}</div>
-        <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted }}>{value}</div>
+        {editing ? (
+          <input
+            type="text"
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitDraft}
+            onKeyDown={e => { if (e.key === 'Enter') commitDraft(); if (e.key === 'Escape') { setDraft(value); setEditing(false); } }}
+            autoFocus
+            spellCheck={false}
+            style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.accentBright,
+              background: C.surface, border: `1px solid ${C.accent}`, borderRadius: 4,
+              padding: "2px 6px", width: 80, outline: "none",
+            }}
+          />
+        ) : (
+          <div
+            onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+            style={{
+              fontFamily: "'Space Mono', monospace", fontSize: 11, color: C.textMuted,
+              cursor: "text", padding: "2px 0",
+            }}
+          >{value}</div>
+        )}
       </div>
     </div>
   );
@@ -177,7 +271,7 @@ function ColorPicker({ label, value, onChange }) {
 function StyleSelector({ colors, selected, onSelect }) {
   const styles = [
     { id: "shimmer", name: "Shimmer", desc: "Organic, flowing data" },
-    { id: "geometric", name: "Geometric", desc: "Structured, blocky" },
+    { id: "geometric", name: "Prism", desc: "Pulsing triangle" },
     { id: "wave", name: "Wave", desc: "Smooth gradients" },
     { id: "pulse", name: "Pulse", desc: "Radial rings" },
   ];
@@ -302,7 +396,7 @@ export default function BeaconGenerator() {
               <div style={{
                 fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
                 letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12,
-              }}>Brand Colors</div>
+              }}>Enter Your Brand Colors</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
                 <ColorPicker label="Primary" value={colors[0]} onChange={v => setColors([v, colors[1], colors[2]])} />
                 <ColorPicker label="Secondary" value={colors[1]} onChange={v => setColors([colors[0], v, colors[2]])} />
