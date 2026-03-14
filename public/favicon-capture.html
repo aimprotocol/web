@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Favicon Capture — AIM Protocol</title>
+  <style>
+    body { background: #050507; color: #dcdde3; font-family: 'SF Mono', monospace; display: flex; flex-direction: column; align-items: center; padding: 48px; gap: 32px; }
+    h1 { font-size: 14px; color: #8e90a0; letter-spacing: 0.1em; text-transform: uppercase; }
+    .row { display: flex; gap: 32px; align-items: flex-end; }
+    .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .label { font-size: 11px; color: #555666; }
+    canvas { image-rendering: pixelated; border-radius: 4px; }
+    button { margin-top: 16px; padding: 10px 20px; background: #7c6aef22; border: 1px solid #7c6aef44; border-radius: 6px; color: #b4a7ff; font-family: inherit; font-size: 12px; cursor: pointer; }
+    button:hover { background: #7c6aef33; }
+    .downloads { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    a { color: #b4a7ff; font-size: 12px; text-decoration: none; padding: 6px 14px; border: 1px solid #1e1e2a; border-radius: 6px; }
+    a:hover { border-color: #7c6aef44; }
+    .tip { font-size: 11px; color: #555666; max-width: 400px; text-align: center; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <h1>Favicon Capture</h1>
+  <p class="tip">The beacon animates below. Click "Capture" to freeze a frame, then download at your preferred size.</p>
+
+  <div class="row">
+    <div class="item">
+      <canvas id="beacon" width="128" height="128"></canvas>
+      <span class="label">128 × 128 (live)</span>
+    </div>
+  </div>
+
+  <button id="capture">Capture this frame</button>
+
+  <div id="output" style="display:none;">
+    <h1 style="margin-top:32px;">Captured — right-click to save or use links below</h1>
+    <div class="row" id="previews"></div>
+    <div class="downloads" id="downloads"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('beacon');
+    const ctx = canvas.getContext('2d');
+    const size = 128;
+    const grid = 8;
+    const cell = size / grid;
+    let tick = 0;
+    let raf;
+
+    function bHash(s) {
+      let h = 5381;
+      for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    }
+
+    function paint() {
+      tick++;
+      const t = tick;
+      for (let i = 0; i < grid * grid; i++) {
+        const wave = Math.sin(t * 0.08 + i * 0.3) * 0.4 + 0.6;
+        const r = (Math.sin(t * 0.05 + i * 0.2) * 60 + 100) * wave | 0;
+        const g = (Math.sin(t * 0.04 + i * 0.15) * 50 + 70) * wave | 0;
+        const b = (Math.sin(t * 0.06 + i * 0.25) * 80 + 160) * wave | 0;
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect((i % grid) * cell, Math.floor(i / grid) * cell, cell, cell);
+      }
+      raf = requestAnimationFrame(paint);
+    }
+    paint();
+
+    document.getElementById('capture').addEventListener('click', function() {
+      cancelAnimationFrame(raf);
+
+      const sizes = [16, 32, 48, 64, 128, 180, 512];
+      const previews = document.getElementById('previews');
+      const downloads = document.getElementById('downloads');
+      previews.innerHTML = '';
+      downloads.innerHTML = '';
+
+      sizes.forEach(s => {
+        // Re-render at target size with pixelated scaling
+        const c = document.createElement('canvas');
+        c.width = s;
+        c.height = s;
+        const cx = c.getContext('2d');
+        cx.imageSmoothingEnabled = false;
+        cx.drawImage(canvas, 0, 0, s, s);
+
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.appendChild(c);
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = s + ' × ' + s;
+        div.appendChild(label);
+        previews.appendChild(div);
+
+        const a = document.createElement('a');
+        a.href = c.toDataURL('image/png');
+        a.download = 'aim-favicon-' + s + '.png';
+        a.textContent = s + 'px PNG';
+        downloads.appendChild(a);
+      });
+
+      document.getElementById('output').style.display = 'flex';
+      document.getElementById('output').style.flexDirection = 'column';
+      document.getElementById('output').style.alignItems = 'center';
+      document.getElementById('output').style.gap = '20px';
+
+      // Restart animation
+      this.textContent = 'Capture another frame';
+      paint();
+    });
+  </script>
+</body>
+</html>
