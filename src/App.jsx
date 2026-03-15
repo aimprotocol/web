@@ -37,7 +37,11 @@ function lerpColor(c1, c2, t) {
 
 // Style 1: Shimmer (default — the original)
 function paintShimmer(ctx, grid, cell, t, colors) {
-  const data = "aim-protocol-manifest-v01-shimmer";
+  const data = JSON.stringify({
+    v: "0.1", url: "https://aimprotocol.org", title: "AIM Protocol — Beacon Generator",
+    type: "spa", interactions: ["color-picker", "style-selector", "size-toggle", "position-toggle", "copy-script"],
+    output: "script-tag", privacy: "client-side-only",
+  });
   const [c1, c2, c3] = colors;
   for (let i = 0; i < grid * grid; i++) {
     const ci = i % data.length;
