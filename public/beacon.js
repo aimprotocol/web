@@ -39,7 +39,6 @@
     position: scriptTag?.getAttribute('data-position') || 'bottom-right',
     size: scriptTag?.getAttribute('data-size') || 'md',
     label: scriptTag?.getAttribute('data-label') || 'AIM enabled',
-    toast: scriptTag?.getAttribute('data-toast') !== 'false',
   };
 
   const SIZES = { sm: 28, md: 40, lg: 56 };
@@ -379,8 +378,8 @@
 
     container.setAttribute('style',
       (posStyles[CONFIG.position] || posStyles['bottom-right']) +
-      'display:flex;align-items:center;gap:8px;' +
-      'padding:6px 10px 6px 6px;' +
+      'display:flex;align-items:center;gap:8px;position:relative;' +
+      'padding:6px 14px 6px 6px;' +
       'background:rgba(10,10,15,0.88);' +
       'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
       'border:1px solid rgba(99,102,241,0.2);' +
@@ -414,8 +413,40 @@
     labelEl.appendChild(topLabel);
     labelEl.appendChild(bottomLabel);
 
+    // Close button
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '\u2715';
+    closeBtn.setAttribute('aria-label', 'Close beacon');
+    closeBtn.setAttribute('style',
+      'position:absolute;top:3px;right:3px;' +
+      'font-size:8px;color:#8e90a0;cursor:pointer;' +
+      'background:none;border:none;padding:2px 4px;' +
+      'line-height:1;opacity:0.6;transition:opacity 0.2s;'
+    );
+    closeBtn.addEventListener('mouseenter', function() { closeBtn.style.opacity = '1'; });
+    closeBtn.addEventListener('mouseleave', function() { closeBtn.style.opacity = '0.6'; });
+    closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissBeacon();
+    });
+
     container.appendChild(canvas);
     container.appendChild(labelEl);
+    container.appendChild(closeBtn);
+
+    // Dismiss helper
+    function dismissBeacon() {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      container.style.transition = 'opacity 0.3s, transform 0.3s';
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(8px)';
+      setTimeout(function() {
+        if (container.parentNode) container.parentNode.removeChild(container);
+      }, 300);
+    }
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(dismissBeacon, 3000);
 
     // Hover effect
     container.addEventListener('mouseenter', function() {
@@ -500,99 +531,6 @@
     return panel;
   }
 
-  // ═══════════════════════════════════════════
-  // TOAST NOTIFICATION
-  // ═══════════════════════════════════════════
-
-  function showToast() {
-    var STORAGE_KEY = 'aim-beacon-toast-dismissed';
-    
-    // Check if already dismissed
-    try {
-      if (localStorage.getItem(STORAGE_KEY)) return;
-    } catch(e) { /* localStorage not available, show toast anyway */ }
-
-    var toast = document.createElement('div');
-    toast.setAttribute('style',
-      'position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100000;' +
-      'display:flex;align-items:center;gap:12px;' +
-      'padding:12px 16px;' +
-      'background:rgba(10,10,18,0.92);' +
-      'backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);' +
-      'border:1px solid rgba(99,102,241,0.3);' +
-      'border-radius:12px;' +
-      'box-shadow:0 8px 32px rgba(0,0,0,0.4);' +
-      'font-family:-apple-system,system-ui,sans-serif;' +
-      'animation:aimToastIn 0.4s ease;' +
-      'max-width:420px;'
-    );
-
-    // Mini beacon in toast
-    var miniCanvas = document.createElement('canvas');
-    miniCanvas.width = 28;
-    miniCanvas.height = 28;
-    miniCanvas.setAttribute('style', 'border-radius:4px;image-rendering:pixelated;flex-shrink:0;');
-    
-    var miniCtx = miniCanvas.getContext('2d');
-    var miniTick = 0;
-    var miniGrid = 6;
-    var miniCell = 28 / miniGrid;
-    var miniPainter = painters[CONFIG.style] || painters.shimmer;
-    
-    var miniRaf;
-    function paintMini() {
-      miniTick++;
-      miniPainter(miniCtx, miniGrid, miniCell, miniTick, rgbColors);
-      miniRaf = requestAnimationFrame(paintMini);
-    }
-    paintMini();
-
-    var textContainer = document.createElement('div');
-    textContainer.innerHTML =
-      '<div style="font-size:12px;font-weight:600;color:#e0e2ea;margin-bottom:2px;">This site supports AIM Protocol</div>' +
-      '<div style="font-size:11px;color:#8e90a0;">Your AI agent can read and interact with this page.</div>';
-
-    var dismissBtn = document.createElement('button');
-    dismissBtn.textContent = 'Got it';
-    dismissBtn.setAttribute('style',
-      'padding:6px 14px;background:rgba(99,102,241,0.15);' +
-      'border:1px solid rgba(99,102,241,0.3);border-radius:6px;' +
-      'color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;' +
-      'font-family:-apple-system,system-ui,sans-serif;flex-shrink:0;' +
-      'transition:all 0.2s;'
-    );
-    dismissBtn.addEventListener('mouseenter', function() {
-      dismissBtn.style.background = 'rgba(99,102,241,0.25)';
-    });
-    dismissBtn.addEventListener('mouseleave', function() {
-      dismissBtn.style.background = 'rgba(99,102,241,0.15)';
-    });
-
-    dismissBtn.addEventListener('click', function() {
-      cancelAnimationFrame(miniRaf);
-      toast.style.animation = 'aimToastOut 0.3s ease forwards';
-      setTimeout(function() {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-      }, 300);
-      try { localStorage.setItem(STORAGE_KEY, '1'); } catch(e) {}
-    });
-
-    toast.appendChild(miniCanvas);
-    toast.appendChild(textContainer);
-    toast.appendChild(dismissBtn);
-    document.body.appendChild(toast);
-
-    // Auto-dismiss after 8 seconds
-    setTimeout(function() {
-      if (toast.parentNode) {
-        cancelAnimationFrame(miniRaf);
-        toast.style.animation = 'aimToastOut 0.3s ease forwards';
-        setTimeout(function() {
-          if (toast.parentNode) toast.parentNode.removeChild(toast);
-        }, 300);
-      }
-    }, 8000);
-  }
 
   // ═══════════════════════════════════════════
   // INJECT STYLES
@@ -600,9 +538,7 @@
 
   function injectStyles() {
     var style = document.createElement('style');
-    style.textContent =
-      '@keyframes aimToastIn{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}' +
-      '@keyframes aimToastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-12px)}}';
+    style.textContent = '';
     document.head.appendChild(style);
   }
 
@@ -678,10 +614,6 @@
     // Start animation
     startAnimation();
 
-    // Show toast on first visit
-    if (CONFIG.toast) {
-      setTimeout(showToast, 1000);
-    }
 
     // Watch for DOM changes (SPA support)
     var debounceTimer = null;
