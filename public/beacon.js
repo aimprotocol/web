@@ -480,6 +480,7 @@
 
   function createManifestPanel() {
     var panel = document.createElement('div');
+    panel.setAttribute('data-aim-manifest-panel', '');
     var isBottom = CONFIG.position.indexOf('B') === 0;
     var isRight = CONFIG.position.indexOf('R') > -1;
     
@@ -488,7 +489,7 @@
       (isBottom ? 'bottom:' + (canvasSize + 52) + 'px;' : 'top:' + (canvasSize + 52) + 'px;') +
       (isRight ? 'right:16px;' : 'left:16px;') +
       'z-index:99998;' +
-      'width:340px;max-height:400px;overflow:auto;' +
+      'width:340px;max-height:400px;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;' +
       'background:rgba(10,10,18,0.95);' +
       'backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);' +
       'border:1px solid rgba(99,102,241,0.25);' +
@@ -535,7 +536,7 @@
 
   function injectStyles() {
     var style = document.createElement('style');
-    style.textContent = '';
+    style.textContent = '[data-aim-manifest-panel]::-webkit-scrollbar{display:none}';
     document.head.appendChild(style);
   }
 
