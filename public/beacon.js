@@ -39,6 +39,7 @@
     position: scriptTag?.getAttribute('data-position') || 'bottom-right',
     size: scriptTag?.getAttribute('data-size') || 'md',
     label: scriptTag?.getAttribute('data-label') || 'AIM enabled',
+    visibility: scriptTag?.getAttribute('data-visibility') || 'peek',
   };
 
   const SIZES = { sm: 28, md: 40, lg: 56 };
@@ -445,9 +446,6 @@
       }, 300);
     }
 
-    // Auto-dismiss after 3 seconds
-    setTimeout(dismissBeacon, 3000);
-
     // Hover effect
     container.addEventListener('mouseenter', function() {
       container.style.borderColor = 'rgba(99,102,241,0.4)';
@@ -608,11 +606,26 @@
     // Initial introspection
     updateManifest();
 
-    // Create beacon UI
-    beaconUI = createBeaconUI();
+    // Create beacon UI (unless hidden)
+    if (CONFIG.visibility !== 'hidden') {
+      beaconUI = createBeaconUI();
+      startAnimation();
 
-    // Start animation
-    startAnimation();
+      // Peek mode: auto-dismiss after 3 seconds
+      if (CONFIG.visibility === 'peek') {
+        setTimeout(function() {
+          if (beaconUI && beaconUI.container && beaconUI.container.parentNode) {
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            beaconUI.container.style.transition = 'opacity 0.3s, transform 0.3s';
+            beaconUI.container.style.opacity = '0';
+            beaconUI.container.style.transform = 'translateY(8px)';
+            setTimeout(function() {
+              if (beaconUI.container.parentNode) beaconUI.container.parentNode.removeChild(beaconUI.container);
+            }, 300);
+          }
+        }, 3000);
+      }
+    }
 
 
     // Watch for DOM changes (SPA support)

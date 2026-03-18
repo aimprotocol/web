@@ -37,7 +37,7 @@ That's it. The beacon appears, reads your page, and any AIM-aware agent can cons
   data-size="md"
   data-position="bottom-right"
   data-label="AIM enabled"
-  data-toast="true">
+  data-visibility="peek">
 </script>
 ```
 
@@ -50,7 +50,7 @@ That's it. The beacon appears, reads your page, and any AIM-aware agent can cons
 | `data-size` | `sm` (28px), `md` (40px), `lg` (56px) | `md` | Beacon size |
 | `data-position` | `bottom-right`, `bottom-left`, `header-right`, `header-left` | `bottom-right` | Beacon placement |
 | `data-label` | Any text | `AIM enabled` | Label shown next to the beacon |
-| `data-toast` | `true`, `false` | `true` | Show a dismissible intro toast on first visit |
+| `data-visibility` | `persistent`, `peek`, `hidden` | `peek` | `persistent` = always visible, `peek` = shows for 3s then fades, `hidden` = protocol only, no UI |
 
 ### Generate your beacon
 
@@ -105,7 +105,7 @@ Check your browser console for the AIM Protocol status message and element count
 
 **This script runs entirely in the browser.** It does NOT transmit any data to any server, third party, or external service. All DOM introspection and manifest generation happens locally. The beacon is purely visual.
 
-- No cookies set (except localStorage for toast dismissal)
+- No cookies or localStorage
 - No network requests
 - No tracking
 - No data collection

@@ -238,7 +238,7 @@ The cinematic marketing/landing page. Dark theme, floating beacon hero, honest a
 ### Demo Pages (linked from landing page)
 Each is a standalone, realistic-looking website with:
 - Its own visual design (warm editorial, clean e-commerce, etc. — NOT the dark AIM theme)
-- An AgentBeacon in a consistent position (bottom-right floating + dismissible toast on first visit)
+- An AgentBeacon in a consistent position (bottom-right floating, auto-dismissing after 3s in peek mode)
 - A real AIM manifest that the agent reads
 - An AI-powered agent panel that interprets natural language preferences
 
@@ -287,7 +287,7 @@ Command support (bidirectional) can be a future opt-in upgrade.
 - `data-position` — placement: "bottom-right" (default), "bottom-left", "header-right", "header-left"
 - `data-size` — "sm" (28px), "md" (40px), "lg" (56px)
 - `data-label` — optional text label, e.g., "AIM enabled"
-- `data-toast` — show a dismissible introduction toast on first visit: "true" (default), "false"
+- `data-visibility` — "persistent" (always visible), "peek" (shows 3s then fades, default), "hidden" (protocol only, no UI)
 
 ### Beacon Generator (on aimprotocol.org)
 A tool on the landing page where visitors can:
