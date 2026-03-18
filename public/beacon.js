@@ -36,7 +36,7 @@
   const CONFIG = {
     colors: (scriptTag?.getAttribute('data-colors') || '#6366f1,#ec4899,#06b6d4').split(',').map(c => c.trim()),
     style: scriptTag?.getAttribute('data-style') || 'shimmer',
-    position: scriptTag?.getAttribute('data-position') || 'bottom-right',
+    position: scriptTag?.getAttribute('data-position') || 'BR',
     size: scriptTag?.getAttribute('data-size') || 'md',
     label: scriptTag?.getAttribute('data-label') || 'AIM enabled',
     visibility: scriptTag?.getAttribute('data-visibility') || 'peek',
@@ -371,14 +371,13 @@
 
     // Position styles
     var posStyles = {
-      'bottom-right': 'position:fixed;bottom:16px;right:16px;z-index:99999;',
-      'bottom-left': 'position:fixed;bottom:16px;left:16px;z-index:99999;',
-      'header-right': 'position:fixed;top:12px;right:16px;z-index:99999;',
-      'header-left': 'position:fixed;top:12px;left:16px;z-index:99999;',
+      'BR': 'position:fixed;bottom:16px;right:16px;z-index:99999;',
+      'BL': 'position:fixed;bottom:16px;left:16px;z-index:99999;',
+      'TR': 'position:fixed;top:12px;right:16px;z-index:99999;',
     };
 
     container.setAttribute('style',
-      (posStyles[CONFIG.position] || posStyles['bottom-right']) +
+      (posStyles[CONFIG.position] || posStyles['BR']) +
       'display:inline-flex;align-items:center;gap:8px;' +
       'padding:6px 14px 6px 6px;' +
       'background:rgba(10,10,15,0.88);' +
@@ -481,8 +480,8 @@
 
   function createManifestPanel() {
     var panel = document.createElement('div');
-    var isBottom = CONFIG.position.indexOf('bottom') === 0;
-    var isRight = CONFIG.position.indexOf('right') > -1;
+    var isBottom = CONFIG.position.indexOf('B') === 0;
+    var isRight = CONFIG.position.indexOf('R') > -1;
     
     panel.setAttribute('style',
       'position:fixed;' +

@@ -260,7 +260,7 @@ The AgentBeacon should work as a single script tag — no configuration, no per-
 <script src="https://aimprotocol.org/beacon.js"
         data-colors="#6366f1,#f472b6"
         data-style="shimmer"
-        data-position="bottom-right">
+        data-position="BR">
 </script>
 ```
 
@@ -284,7 +284,7 @@ Command support (bidirectional) can be a future opt-in upgrade.
 ### Configuration Options
 - `data-colors` — brand colors (1-3 hex values) that tint the beacon visualization
 - `data-style` — visualization style: "shimmer" (default), "geometric", "wave", "pulse"
-- `data-position` — placement: "bottom-right" (default), "bottom-left", "header-right", "header-left"
+- `data-position` — placement: "BR" (default), "BL", "TR" — no top-left since that's logo territory
 - `data-size` — "sm" (28px), "md" (40px), "lg" (56px)
 - `data-label` — optional text label, e.g., "AIM enabled"
 - `data-visibility` — "persistent" (always visible), "peek" (shows 3s then fades, default), "hidden" (protocol only, no UI)

@@ -35,7 +35,7 @@ That's it. The beacon appears, reads your page, and any AIM-aware agent can cons
   data-colors="#6366f1,#ec4899,#06b6d4"
   data-style="shimmer"
   data-size="md"
-  data-position="bottom-right"
+  data-position="BR"
   data-label="AIM enabled"
   data-visibility="peek">
 </script>
@@ -48,7 +48,7 @@ That's it. The beacon appears, reads your page, and any AIM-aware agent can cons
 | `data-colors` | Hex colors (comma-separated) | `#6366f1,#ec4899,#06b6d4` | Brand colors for the beacon visualization |
 | `data-style` | `shimmer`, `geometric`, `wave`, `pulse` | `shimmer` | Visualization animation style |
 | `data-size` | `sm` (28px), `md` (40px), `lg` (56px) | `md` | Beacon size |
-| `data-position` | `bottom-right`, `bottom-left`, `header-right`, `header-left` | `bottom-right` | Beacon placement |
+| `data-position` | `BR`, `BL`, `TR` | `BR` | Beacon placement (bottom-right, bottom-left, top-right) |
 | `data-label` | Any text | `AIM enabled` | Label shown next to the beacon |
 | `data-visibility` | `persistent`, `peek`, `hidden` | `peek` | `persistent` = always visible, `peek` = shows for 3s then fades, `hidden` = protocol only, no UI |
 

@@ -448,7 +448,7 @@ export default function BeaconGenerator() {
   const [colors, setColors] = useState(["#6366f1", "#ec4899", "#06b6d4"]);
   const [style, setStyle] = useState("shimmer");
   const [size, setSize] = useState("md");
-  const [position, setPosition] = useState("bottom-right");
+  const [position, setPosition] = useState("BR");
   const [visibility, setVisibility] = useState("peek");
   const [copied, setCopied] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -635,7 +635,7 @@ export default function BeaconGenerator() {
                   letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
                 }}>Position</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {[["bottom-right", "BR"], ["bottom-left", "BL"], ["header-right", "HR"], ["header-left", "HL"]].map(([val, label]) => (
+                  {[["BR", "BR"], ["BL", "BL"], ["TR", "TR"]].map(([val, label]) => (
                     <button key={val} onClick={() => setPosition(val)} style={{
                       flex: 1, padding: "8px 0", background: position === val ? C.surfaceLight : C.surface,
                       border: `1.5px solid ${position === val ? C.accent : C.border}`,
