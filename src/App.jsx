@@ -449,6 +449,7 @@ export default function BeaconGenerator() {
   const [style, setStyle] = useState("shimmer");
   const [size, setSize] = useState("md");
   const [position, setPosition] = useState("bottom-right");
+  const [visibility, setVisibility] = useState("peek");
   const [copied, setCopied] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
 
@@ -458,7 +459,8 @@ export default function BeaconGenerator() {
   data-colors="${colors.join(",")}"
   data-style="${style}"
   data-size="${size}"
-  data-position="${position}">
+  data-position="${position}"
+  data-visibility="${visibility}">
 </script>`;
 
   const handleCopy = () => {
@@ -643,6 +645,37 @@ export default function BeaconGenerator() {
                     }}>{label}</button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Visibility */}
+            <div>
+              <div style={{
+                fontFamily: "'Space Mono', monospace", fontSize: 10, color: C.textMuted,
+                letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 8,
+              }}>Visibility</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[
+                  ["persistent", "Persistent"],
+                  ["peek", "Peek"],
+                  ["hidden", "Hidden"],
+                ].map(([val, label]) => (
+                  <button key={val} onClick={() => setVisibility(val)} style={{
+                    flex: 1, padding: "8px 0", background: visibility === val ? C.surfaceLight : C.surface,
+                    border: `1.5px solid ${visibility === val ? C.accent : C.border}`,
+                    borderRadius: 6, color: visibility === val ? C.accentBright : C.textDim,
+                    fontFamily: "'Space Mono', monospace", fontSize: 10, fontWeight: 700,
+                    cursor: "pointer", transition: "all 0.2s",
+                  }}>{label}</button>
+                ))}
+              </div>
+              <div style={{
+                fontFamily: "'Outfit', sans-serif", fontSize: 11, color: C.textMuted,
+                marginTop: 6, lineHeight: 1.4,
+              }}>
+                {visibility === "persistent" && "Always visible on the page"}
+                {visibility === "peek" && "Shows for 3s then fades away"}
+                {visibility === "hidden" && "Protocol runs, no visual beacon"}
               </div>
             </div>
           </div>
