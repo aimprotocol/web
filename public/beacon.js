@@ -379,7 +379,7 @@
 
     container.setAttribute('style',
       (posStyles[CONFIG.position] || posStyles['bottom-right']) +
-      'display:flex;align-items:center;gap:8px;position:relative;' +
+      'display:inline-flex;align-items:center;gap:8px;' +
       'padding:6px 14px 6px 6px;' +
       'background:rgba(10,10,15,0.88);' +
       'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);' +
@@ -419,10 +419,10 @@
     closeBtn.textContent = '\u2715';
     closeBtn.setAttribute('aria-label', 'Close beacon');
     closeBtn.setAttribute('style',
-      'position:absolute;top:3px;right:3px;' +
       'font-size:8px;color:#8e90a0;cursor:pointer;' +
-      'background:none;border:none;padding:2px 4px;' +
-      'line-height:1;opacity:0.6;transition:opacity 0.2s;'
+      'background:none;border:none;padding:0 0 0 4px;' +
+      'line-height:1;opacity:0.6;transition:opacity 0.2s;' +
+      'align-self:flex-start;flex-shrink:0;margin-top:2px;'
     );
     closeBtn.addEventListener('mouseenter', function() { closeBtn.style.opacity = '1'; });
     closeBtn.addEventListener('mouseleave', function() { closeBtn.style.opacity = '0.6'; });
